@@ -3,5 +3,5 @@
     <string name="togglebutton">ToggleButton</string>
     <string name="flash_not_available">Flash not available on this device...</string>
     <string name="exit_title">Exit</string>
-    <string name="exit_message">Are you sure you want to exit the application?</string>
+    <string name="exit_app_message">Please press again to exit</string>
 </resources>

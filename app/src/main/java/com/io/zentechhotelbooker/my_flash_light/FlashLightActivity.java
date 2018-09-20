@@ -5,19 +5,27 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
+import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.CompoundButton;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 public class FlashLightActivity extends AppCompatActivity {
 
     // Creating a ToggleButton
-    private ToggleButton toggleButton;
+    private ToggleButton mToggleButton;
 
+    // Creating a CameraManager
     private CameraManager mCameraManager;
+
+    /* Creating a String to CameraId
+    since phones have multiple cameras*/
     private String mCameraId;
+
+    private boolean doublePressBackToExitApp = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,29 +35,29 @@ public class FlashLightActivity extends AppCompatActivity {
         boolean isFlashAvailable = getApplicationContext().getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
 
+        // if flash is not available on phone then it displays error message
         if(!isFlashAvailable){
-            // display message if device has no flash
+            // Method call to display error message if device does not have flash
             showNoFlashError();
-            //Toast.makeText(FlashLightActivity.this, getString(R.string.flash_not_available),Toast.LENGTH_LONG).show();
         }
 
-        // getting the cameraManager and camera Id
+        // instantiating the CameraManager
         mCameraManager = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
         try {
+            // getting the id of the camera from phone using CameraManager
             mCameraId = mCameraManager.getCameraIdList()[0];
         }
         catch (Exception e){
+            // print exception error
             e.printStackTrace();
         }
 
-        // Assigning id to toggleButton
-        toggleButton = findViewById(R.id.toggleButton);
+        mToggleButton = findViewById(R.id.toggleButton);
 
-        // called when the status button is called
-        toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-                //we will call this method to switch the flash
+                // method to switch on flash
                 switchFlashLight(isChecked);
             }
         });
@@ -59,55 +67,53 @@ public class FlashLightActivity extends AppCompatActivity {
 
     // Display error message and closes app if device has no flash
     public void showNoFlashError(){
-       // AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Oops!");
-        builder.setMessage(getString(R.string.flash_not_available));
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+        AlertDialog alertDialog = new AlertDialog.Builder(FlashLightActivity.this).create();
+        alertDialog.setTitle("Oops!");
+        alertDialog.setMessage(getString(R.string.flash_not_available));
+        alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                // finishes the activity (closes the application)
+                // closes the application
                 finish();
             }
         });
-        AlertDialog alertDialog = builder.create();
         alertDialog.show();
 
     }
 
+    // Method to switch on Flash Light
     public void switchFlashLight(boolean status){
         try {
+            /*sets the touchMode to the CameraId of the device
+            to be switched on and turns it on
+             */
             mCameraManager.setTorchMode(mCameraId,status);
         }
         catch (CameraAccessException e){
+            // print exception error
             e.printStackTrace();
         }
+
     }
 
+    // Closes application on double tap
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         // closes application
-        AlertDialog.Builder builder = new AlertDialog.Builder(FlashLightActivity.this);
-        builder.setTitle(getString(R.string.exit_title));
-        builder.setMessage(getString(R.string.exit_message));
-        builder.setCancelable(false);
+       if(doublePressBackToExitApp){
+           super.onBackPressed();
+           return;
+        }
+        doublePressBackToExitApp = true;
+       // display a toast to user
+        Toast.makeText(FlashLightActivity.this,getString(R.string.exit_app_message),Toast.LENGTH_SHORT).show();
 
-        builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+        // Create a delay of 2 seconds
+        new Handler().postDelayed(new Runnable() {
             @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                finish();
+            public void run() {
+                doublePressBackToExitApp = false;
             }
-        });
-
-        builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.dismiss();
-            }
-        });
-
-        AlertDialog alert = builder.create();
-        alert.show();
+        },2000);
     }
 }
